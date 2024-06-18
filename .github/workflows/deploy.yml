@@ -54,6 +54,7 @@ jobs:
             mkdir -p strapi-app
             tar -xzvf strapi-app.tar.gz -C strapi-app
             cd strapi-app
+            echo "APP_KEYS=${{ secrets.APP_KEYS }}" >> .env
             npm install --production
             npm run start
           EOF
