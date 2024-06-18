@@ -28,6 +28,9 @@ jobs:
       - name: Build Strapi app
         run: npm run build
 
+      - name: Archive files for transfer
+        run: tar -czvf strapi-app.tar.gz ./*
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -40,10 +43,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Transfer files to EC2 instance
-        run: |
-          scp -o StrictHostKeyChecking=no -r ./* $SSH_USER@$EC2_INSTANCE_IP:/home/ubuntu/strapi-app
+      - name: Transfer archive to EC2 instance
+        run: scp -o StrictHostKeyChecking=no strapi-app.tar.gz $SSH_USER@$EC2_INSTANCE_IP:/home/ubuntu/
 
-      - name: SSH into EC2 instance and restart Strapi application
+      - name: SSH into EC2 instance and deploy
         run: |
-          ssh -o StrictHostKeyChecking=no $SSH_USER@$EC2_INSTANCE_IP 'cd /home/ubuntu/strapi-app && npm install --production && npm run start'
+          ssh -o StrictHostKeyChecking=no $SSH_USER@$EC2_INSTANCE_IP << 'EOF'
+            cd /home/ubuntu/
+            mkdir -p strapi-app
+            tar -xzvf strapi-app.tar.gz -C strapi-app
+            cd strapi-app
+            npm install --production
+            npm run start
+          EOF
