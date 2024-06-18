@@ -1,0 +1,50 @@
+name: Deploy Strapi App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SSH_USER: ubuntu
+      EC2_INSTANCE_IP: 52.66.161.228
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --prefix strapi-app
+
+      - name: Build Strapi app
+        run: npm run build --prefix strapi-app
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Add SSH private key
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Transfer files to EC2 instance
+        run: |
+          scp -o StrictHostKeyChecking=no -r ./strapi-app/* $SSH_USER@$EC2_INSTANCE_IP:/home/ubuntu/strapi-app
+
+      - name: SSH into EC2 instance and restart Strapi application
+        run: |
+          ssh -o StrictHostKeyChecking=no $SSH_USER@$EC2_INSTANCE_IP 'cd /home/ubuntu/strapi-app && npm install --production && npm run start'
+
