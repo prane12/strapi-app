@@ -29,7 +29,7 @@ jobs:
         run: npm run build
 
       - name: Archive files for transfer
-        run: tar -czvf strapi-app.tar.gz ./*
+        run: tar -czvf strapi-app.tar.gz --exclude='node_modules' --exclude='.git' ./*
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -50,9 +50,13 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no $SSH_USER@$EC2_INSTANCE_IP << 'EOF'
             cd /home/ubuntu/
+            rm -rf strapi-app
             mkdir -p strapi-app
             tar -xzvf strapi-app.tar.gz -C strapi-app
             cd strapi-app
             npm install --production
             npm run start
           EOF
+
+      - name: Clean up local files
+        run: rm strapi-app.tar.gz
