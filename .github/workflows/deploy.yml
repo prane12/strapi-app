@@ -23,10 +23,14 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --prefix strapi-app
+        run: |
+          cd strapi-app
+          npm install
 
       - name: Build Strapi app
-        run: npm run build --prefix strapi-app
+        run: |
+          cd strapi-app
+          npm run build
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -47,4 +51,3 @@ jobs:
       - name: SSH into EC2 instance and restart Strapi application
         run: |
           ssh -o StrictHostKeyChecking=no $SSH_USER@$EC2_INSTANCE_IP 'cd /home/ubuntu/strapi-app && npm install --production && npm run start'
-
